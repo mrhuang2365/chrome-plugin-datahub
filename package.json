@@ -1,0 +1,25 @@
+{
+  "name": "chrome-plugin-datahub",
+  "version": "1.0.0",
+  "description": "chorm-plugin,datahub平台数据录入",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint src/*.js --fix"
+  },
+  "keywords": [
+    "chrome-plugin",
+    "js",
+    "html"
+  ],
+  "author": "milohuang",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.14.6",
+    "@tencent/eslint-config-tencent": "^0.15.1",
+    "@typescript-eslint/parser": "^4.28.1",
+    "eslint": "^7.29.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
+    "prettier": "^2.3.2"
+  }
+}

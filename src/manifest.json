@@ -1,0 +1,51 @@
+{
+    "manifest_version": 2,
+    "name": "datahub数据录入",
+    "version": "1.0.0",
+    "description": "datahub数据录入",
+    "icons": {
+        "16": "static/img/icon.png",
+        "48": "static/img/icon.png",
+        "128": "static/img/icon.png"
+    },
+    "browser_action": 
+    {
+        "default_icon": "static/img/icon.png",
+        "default_title": "datahub数据录入",
+        "default_popup": "popup.html"
+    },
+    "permissions":
+    [
+        "contextMenus", 
+        "tabs",
+        "notifications", 
+        "webRequest",
+        "webRequestBlocking",
+        "storage", 
+        "cookies",
+        "activeTab",
+        "<all_urls>"
+    ],
+    "content_scripts": [{
+        "matches": [
+            "http://datahub.tencent.com/edu/data_link/*"
+        ],
+        "js": [
+            "./content/main.js"
+        ],
+        "css": ["./static/css/content.css"]
+    }],
+    "externally_connectable": {
+        "matches": [
+            "http://datahub.tencent.com/*",
+            "http://datahub.tencent.com/edu/data_link/*"
+        ]
+    },
+    "homepage_url": "http://datahub.tencent.com/edu/data_link/",
+    "options_ui":
+    {
+        "page": "options.html",
+        "chrome_style": true
+    },
+    "content_security_policy":"script-src 'self' https://apis.google.com; object-src 'self'"
+}
