@@ -207,7 +207,12 @@ const dadahubApi = {
         .then(async function (response) {
           try {
             const json = await response.json();
-            resolve(json.result);
+            const { status, result } = json;
+            if (status?.code === '1') {
+              resolve(result);
+            } else {
+              reject(new Error(status.message));
+            }
           } catch (error) {
             reject(error);
           }
@@ -497,7 +502,11 @@ Content.prototype.etlComponentSubmit = async function (
   }, {});
   const newDataList = excelDataList
     .filter((item) => {
-      return !etlTaskFieldMap[item.fieldKey];
+      if (!etlTaskFieldMap[item.fieldKey]) {
+        etlTaskFieldMap[item.fieldKey] = item;
+        return true
+      }
+      return false;
     })
     .map((item) => {
       const { optExpr, fieldKey, fieldType } = item;
@@ -563,6 +572,7 @@ Content.prototype.attaComponentSubmit = async function (
   excelDataList.forEach((item) => {
     const { fieldKey, fieldType } = item;
     if (!recordMap[fieldKey]) {
+      recordMap[fieldKey] = item;
       /**
        * maxIndex +1
        */
@@ -639,6 +649,7 @@ Content.prototype.sinkComponentSubmit = async function (
   preloadFields.forEach((field) => {
     const { field_key } = field;
     if (!recordMap[field_key]) {
+      recordMap[field_key] = field;
       // this.dialog.addText(`${field_key}`, 'desc');
       newFieldList.push(field);
     }

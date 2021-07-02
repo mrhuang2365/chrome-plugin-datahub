@@ -7,7 +7,10 @@ const uglify = require('gulp-uglify');
  * 拷贝源代码文件
  */
 function cpFiles() {
-  gulp.src('src/**/*').pipe(gulp.dest('dist'));
+  gulp.src('src/static/**/*').pipe(gulp.dest('dist/static'));
+  gulp.src('src/manifest.json').pipe(gulp.dest('dist/'));
+  gulp.src('src/options.html').pipe(gulp.dest('dist/'));
+  gulp.src('src/popup.html').pipe(gulp.dest('dist/'));
 }
 
 /**
@@ -16,20 +19,14 @@ function cpFiles() {
  * @param {*} dist 目标路径
  */
 function uglifyJsTask(src, dist) {
-  // gulp.src(src).pipe(uglify()).pipe(gulp.dest(dist));
+  gulp.src(src).pipe(uglify()).pipe(gulp.dest(dist));
 }
 
 gulp.task('build', function (done) {
+  uglifyJsTask('src/popup/*.js', 'dist/popup/');
+  uglifyJsTask('src/background/*.js', 'dist/background/');
+  uglifyJsTask('src/options/*.js', 'dist/options/');
+  uglifyJsTask('src/content/*.js', 'dist/content/');
   cpFiles();
-  uglifyJsTask('src/popup/popup.js', 'dist/popup/popup.js');
-  uglifyJsTask('src/options/options.js', 'dist/options/options.js');
-  uglifyJsTask('src/content/main.js', 'dist/content/main.js');
   done();
 });
-
-// gulp.series([
-//   cpFiles(),
-//   uglifyJsTask('src/popup/popup.js', 'dist/popup/popup.js'),
-//   uglifyJsTask('src/options/options.js', 'dist/options/options.js'),
-//   uglifyJsTask('src/content/main.js', 'dist/content/main.js'),
-// ]);
