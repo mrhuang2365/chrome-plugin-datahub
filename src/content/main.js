@@ -489,7 +489,8 @@ Content.prototype.etlComponentSubmit = async function (
    * etlTaskId: etl插件的id
    * etlTaskItemList: 已经录入的字段信息列表
    */
-  const { etlTaskId, etlTaskItemList } = dataEtlTask;
+  const { etlTaskId } = dataEtlTask;
+  const etlTaskItemList = dataEtlTask.etlTaskItemList || [];
   this.log('etlTaskItemList', etlTaskItemList);
   /**
    * @description
@@ -504,7 +505,7 @@ Content.prototype.etlComponentSubmit = async function (
     .filter((item) => {
       if (!etlTaskFieldMap[item.fieldKey]) {
         etlTaskFieldMap[item.fieldKey] = item;
-        return true
+        return true;
       }
       return false;
     })
