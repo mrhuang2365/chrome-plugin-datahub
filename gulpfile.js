@@ -1,5 +1,6 @@
 const gulp = require('gulp');
 const uglify = require('gulp-uglify');
+const del = require('del');
 
 /**
  * cpFiles
@@ -21,8 +22,12 @@ function cpFiles() {
 function uglifyJsTask(src, dist) {
   gulp.src(src).pipe(uglify()).pipe(gulp.dest(dist));
 }
+gulp.task('clean', function (done) {
+  del(['dist']);
+  done();
+});
 
-gulp.task('build', function (done) {
+gulp.task('ugly', function (done) {
   uglifyJsTask('src/popup/*.js', 'dist/popup/');
   uglifyJsTask('src/background/*.js', 'dist/background/');
   uglifyJsTask('src/options/*.js', 'dist/options/');
@@ -30,3 +35,10 @@ gulp.task('build', function (done) {
   cpFiles();
   done();
 });
+
+gulp.task(
+  'build',
+  gulp.series('clean', 'ugly', function (done) {
+    done();
+  }),
+);
