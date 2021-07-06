@@ -1,4 +1,55 @@
 /**
+ *
+ * ***********************
+ *
+ * 通用的封装方法
+ *
+ */
+const utils = {
+  /**
+   * arrayToObject
+   * @param {*} list item[]
+   * @param {*} key string
+   * @description 根据数据里面的某一个key对应的值，将数组转换为对象
+   * @returns object
+   * {
+   *  [value: index]: item
+   * }
+   */
+  arrayToObject(list, key) {
+    if (!Array.isArray(list) || !key) {
+      return {};
+    }
+    return list.reduce((acc, item) => {
+      const value = item[key];
+      acc[value] = item;
+      return acc;
+    }, {});
+  },
+  /**
+   * filterArrayWithKey
+   * @param {*} list1 item[]
+   * @param {*} key1 string
+   * @param {*} list2 item[]
+   * @param {*} key2 string
+   * @description 找出 list1列表中 item[key1] 不存在于 list2 的项
+   */
+  filterArrayWithKey(list1, key1, list2, key2) {
+    const list2Map = utils.arrayToObject(list2, key2);
+    return list1.filter((item) => {
+      if (list2Map[item[key1]] !== undefined) {
+        return false;
+      }
+      list2Map[item[key1]] = item;
+      return true;
+    });
+  },
+};
+
+/**
+ *
+ * **********************
+ *
  * dialog组件
  * @description
  * 1、支持open、close
@@ -183,14 +234,22 @@ Dialog.prototype.loading = function (flag) {
 };
 
 /**
+ *
+ * *******************
+ *
  * logTraceId 应该是datahub平台日志记录id，先随便用一个
+ *
  */
 const logTraceId = '';
 
 /**
+ *
+ * *******************
+ *
  * dadahubApi
  * @description
  * dadahub平台api接口封装
+ *
  */
 const dadahubApi = {
   request(url, data) {
@@ -258,8 +317,8 @@ const dadahubApi = {
   /**
    *
    * @param {*} chainId string
-   * @param {*} sourceId string
-   * @description 获取事件字段列表
+   * @param {*} accessId string
+   * @description 获取公参字段列表
    * @returns object[]
    * @returns create_time  "2021-06-30 17:25:39"
    * @returns create_user "milohuang"
@@ -273,9 +332,9 @@ const dadahubApi = {
    * @returns update_user "milohuang"
    *
    */
-  async getEtlSourceFields(chainId, sourceId) {
+  async getEtlSourceFields(chainId, accessId) {
     const res = await this.get(
-      `http://datahub.tencent.com/api/assets/source/fields?source_id=${sourceId}&chainId=${chainId}&offset=0&limit=10000&log_trace_id=${logTraceId}`,
+      `http://datahub.tencent.com/api/assets/source/fields?source_id=${accessId}&chainId=${chainId}&offset=0&limit=10000&log_trace_id=${logTraceId}`,
     );
     return res.records;
   },
@@ -373,10 +432,14 @@ const dadahubApi = {
 };
 
 /**
+ *
+ * *******************
+ *
  * @description
  * content js 逻辑处理
  * 1、接收插件消息&数据
  * 2、模拟请求保存数据
+ *
  */
 function Content(props) {
   const { dialog } = props;
@@ -396,8 +459,8 @@ function Content(props) {
    * excel中的数据字段
    */
   this.excelfields = {
-    action: 'action*',
-    actionName: '事件显示名*',
+    eventCode: 'action*',
+    eventName: '事件显示名*',
     optExpr: 'action kvp*',
     fieldKey: 'action kvp*',
     fieldType: 'action_kvp value数据类型*',
@@ -459,17 +522,17 @@ Content.prototype.init = function () {
  * 表格数据字段:  "action*", "事件显示名*", "action kvp*", "参数显示名*", "action_kvp value数据类型*"
  */
 Content.prototype.transfromDataFields = function (data) {
-  return data
-    .map((item) => {
-      return Object.keys(this.excelfields).reduce((acc, key) => {
-        acc[key] = item[this.excelfields[key]];
-        return acc;
-      }, {});
-    })
-    .filter((item) => {
-      // 确保该条数据的有效性
-      return !!item.fieldKey;
-    });
+  const resultList = [];
+  data.forEach((item) => {
+    const fieldObj = Object.keys(this.excelfields).reduce((acc, key) => {
+      acc[key] = item[this.excelfields[key]];
+      return acc;
+    }, {});
+    if (fieldObj.fieldKey && fieldObj.fieldType) {
+      resultList.push(fieldObj);
+    }
+  });
+  return resultList;
 };
 /**
  * ETL组件-解析JSON组件-参数配置页面
@@ -478,6 +541,9 @@ Content.prototype.transfromDataFields = function (data) {
  * @description
  *  1、将 etlTaskItemList 和导入数据做比较，筛选出新的参数列表
  *  2、上报数据到datahub
+ *
+ * @todo 如果fieldKey在公参中出现，需要过滤掉
+ *
  */
 Content.prototype.etlComponentSubmit = async function (
   dataEtlTask,
@@ -497,10 +563,10 @@ Content.prototype.etlComponentSubmit = async function (
    * 将 excelDataList 和 etlTaskItemList 做比较
    * 得到需要添加的时间
    */
-  const etlTaskFieldMap = etlTaskItemList.reduce((acc, item) => {
-    acc[item.target_field_keys] = item;
-    return acc;
-  }, {});
+  const etlTaskFieldMap = utils.arrayToObject(
+    etlTaskItemList,
+    'target_field_keys',
+  );
   const newDataList = excelDataList
     .filter((item) => {
       if (!etlTaskFieldMap[item.fieldKey]) {
@@ -641,10 +707,7 @@ Content.prototype.sinkComponentSubmit = async function (
 
   // 记录field_key
   const newFieldList = [...sink.fields];
-  const recordMap = newFieldList.reduce((acc, item) => {
-    acc[item.field_key] = item;
-    return acc;
-  }, {});
+  const recordMap = utils.arrayToObject(newFieldList, 'field_key');
 
   // 添加未勾选的项
   preloadFields.forEach((field) => {
@@ -672,6 +735,48 @@ Content.prototype.sinkComponentSubmit = async function (
   };
   await dadahubApi.saveSink(data);
   this.log('数据', data);
+};
+
+/**
+ * 公共事件管理
+ * @description
+ * 1、获取公参列表
+ * 2、获取事件列表
+ * 3、事件列表 vs 导入事件列表 ==> 得到需要新增的事件列表
+ * 4、录入新增事件+公参
+ *  事件1 + 公参1
+ *  事件2 + 公参2
+ */
+Content.prototype.commonEventsSubmit = async function (
+  chainId,
+  accessId,
+  excelFieldList,
+) {
+  //
+  const commonRecords = await dadahubApi.getEtlSourceFields(chainId, accessId);
+  const eventList = await dadahubApi.getSinkFields(chainId);
+
+  const eventListMap = utils.arrayToObject(eventList, 'event_code');
+  const commonRecordsMap = utils.arrayToObject(commonRecords, 'fieldKey');
+
+  // 筛选出需要新增的事件
+  newEventList = excelFieldList.filter((item) => {
+    return !eventListMap[item.eventCode];
+  });
+
+  console.log('-----commonRecords:', commonRecords);
+  console.log('-----eventList:', eventList);
+  console.log('-----newEventList:', newEventList);
+
+  const newEventCodeMap = utils.arrayToObject(newEventList, 'eventCode');
+  const newEventListMap = newEventList.reduce((acc, item) => {
+    const key = `$${item.eventCode}$${item.fieldKey}`;
+    acc[key] = item;
+    return acc;
+  }, {});
+  /**
+   * @todo 将每一项eventcode的参数都加上公参
+   */
 };
 /**
  *
@@ -719,16 +824,26 @@ Content.prototype.submit = async function (datas) {
     this.log('chainInfo', chainInfo);
     const { busiId, dataSinkList, detailTemplateVOList } = chainInfo;
     const { dataAccess, dataEtlTask } = detailTemplateVOList[0];
-    await this.etlComponentSubmit(dataEtlTask, excelFieldList);
+    const accessId = dataAccess.id;
+    const fieldsExcludeCommonFileds = utils.filterArrayWithKey(
+      excelFieldList,
+      'fieldKey',
+      excelCommonParamsList,
+      'fieldKey',
+    );
+    await this.etlComponentSubmit(dataEtlTask, fieldsExcludeCommonFileds);
     await this.attaComponentSubmit(
       chainId,
-      dataAccess.id,
+      accessId,
       busiId,
       excelCommonParamsList,
     );
-    // await this.sinkComponentSubmit(dataSinkList[0].id, busiId, {
-    //   sources: [{ data_access_id: dataAccess.id, etl_task_id: dataEtlTask.id }],
-    // });
+    await this.sinkComponentSubmit(dataSinkList[0].id, busiId, {
+      sources: [
+        { data_access_id: accessId, etl_task_id: dataEtlTask.etlTaskId },
+      ],
+    });
+    await this.commonEventsSubmit(chainId, accessId, excelFieldList);
     this.dialog.addText(`End`, 'title');
     this.dialog.addText(`数据自动录入操作完成，刷新页面可查看最新数据`, 'info');
   } catch (error) {
@@ -746,7 +861,7 @@ Content.prototype.submit = async function (datas) {
  * data: 接收到的数据
  */
 Content.prototype.initOnMessageHandler = function () {
-  chrome.runtime.onMessage.addListener((event, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((event, _sender, sendResponse) => {
     const { data, type, id } = event;
     this.log('收到信息', id, type, data);
     switch (type) {
