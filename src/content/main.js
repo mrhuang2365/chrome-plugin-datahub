@@ -525,7 +525,12 @@ Content.prototype.transfromDataFields = function (data) {
   const resultList = [];
   data.forEach((item) => {
     const fieldObj = Object.keys(this.excelfields).reduce((acc, key) => {
-      acc[key] = item[this.excelfields[key]];
+      let value = item[this.excelfields[key]];
+      // 参数的key需要转成小写
+      if (key === 'fieldKey') {
+        value = value && value.toLocaleLowerCase();
+      }
+      acc[key] = value;
       return acc;
     }, {});
     if (fieldObj.fieldKey && fieldObj.fieldType) {
@@ -556,7 +561,12 @@ Content.prototype.etlComponentSubmit = async function (
    * etlTaskItemList: 已经录入的字段信息列表
    */
   const { etlTaskId } = dataEtlTask;
-  const etlTaskItemList = dataEtlTask.etlTaskItemList || [];
+  const etlTaskItemList = (dataEtlTask.etlTaskItemList || []).map((item) => {
+    const value = item.target_field_keys;
+    // 转换成小写
+    item.target_field_keys = value && value.toLocaleLowerCase();
+    return item;
+  });
   this.log('etlTaskItemList', etlTaskItemList);
   /**
    * @description
@@ -838,12 +848,12 @@ Content.prototype.submit = async function (datas) {
       busiId,
       excelCommonParamsList,
     );
-    await this.sinkComponentSubmit(dataSinkList[0].id, busiId, {
-      sources: [
-        { data_access_id: accessId, etl_task_id: dataEtlTask.etlTaskId },
-      ],
-    });
-    await this.commonEventsSubmit(chainId, accessId, excelFieldList);
+    // await this.sinkComponentSubmit(dataSinkList[0].id, busiId, {
+    //   sources: [
+    //     { data_access_id: accessId, etl_task_id: dataEtlTask.etlTaskId },
+    //   ],
+    // });
+    // await this.commonEventsSubmit(chainId, accessId, excelFieldList);
     this.dialog.addText(`End`, 'title');
     this.dialog.addText(`数据自动录入操作完成，刷新页面可查看最新数据`, 'info');
   } catch (error) {

@@ -1,5 +1,5 @@
 
-.btn {
+.datahub-modal-root .btn {
   line-height: 1.5715;
   position: relative;
   display: inline-block;
@@ -23,7 +23,7 @@
   background: #fff;
   border-color: #d9d9d9;
 }
-.btn-primary{
+.datahub-modal-root .btn-primary{
   color: #fff;
   background: #1890ff;
   border-color: #1890ff;
