@@ -40,7 +40,7 @@ Popup.prototype.sendMessageToContent = function (message, callback) {
     },
     (tabs) => {
       const { id, url } = tabs[0];
-      if (!url.includes('http://datahub.tencent.com/edu/data_link/add_link')) {
+      if (!url.includes('datahub.tencent.com/edu/data_link/add_link')) {
         alert('请先打开DataHub平台链路配置页面');
         return;
       }

@@ -28,7 +28,8 @@
     ],
     "content_scripts": [{
         "matches": [
-            "http://datahub.tencent.com/edu/data_link/*"
+            "http://datahub.tencent.com/edu/data_link/*",
+            "https://datahub.tencent.com/edu/data_link/*"
         ],
         "js": [
             "./content/main.js"
