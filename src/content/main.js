@@ -104,7 +104,8 @@ Dialog.prototype.extend = function (defaults, props) {
  */
 Dialog.prototype.template = function () {
   const { title, cssName } = this.props;
-  const { root, header, close, content, footer, ok, contentItems, loading } = cssName;
+  const { root, header, close, content, footer, ok, contentItems, loading } =
+    cssName;
 
   const titleEle = `<div class="${header}">${title}<div class="${close}">×</div></div>`;
   const contentEle = `<div class="${content}"><ul class="${contentItems}"></ul></div>`;
@@ -252,6 +253,7 @@ const logTraceId = '';
  *
  */
 const dadahubApi = {
+  baseUrl: `${location.protocol}//datahub.tencent.com/api`,
   request(url, data) {
     const headers = {
       'content-type': 'application/json',
@@ -261,8 +263,9 @@ const dadahubApi = {
       ...data.headers,
       ...headers,
     };
+    const uri = this.baseUrl + url;
     return new Promise((resolve, reject) => {
-      fetch(url, data)
+      fetch(uri, data)
         .then(async function (response) {
           try {
             const json = await response.json();
@@ -302,7 +305,7 @@ const dadahubApi = {
    */
   getDetailByChainId(chainId) {
     return this.get(
-      `http://datahub.tencent.com/api/link/getDetailByChainId?log_trace_id=${logTraceId}&chainId=${chainId}`,
+      `/link/getDetailByChainId?log_trace_id=${logTraceId}&chainId=${chainId}`,
     );
   },
   /**
@@ -310,9 +313,7 @@ const dadahubApi = {
    * @param {*} accessId string
    */
   getAccessByAccessId(accessId) {
-    return this.get(
-      `http://datahub.tencent.com/api/link/access?log_trace_id=${logTraceId}&id=${accessId}`,
-    );
+    return this.get(`/link/access?log_trace_id=${logTraceId}&id=${accessId}`);
   },
   /**
    *
@@ -334,7 +335,7 @@ const dadahubApi = {
    */
   async getEtlSourceFields(chainId, accessId) {
     const res = await this.get(
-      `http://datahub.tencent.com/api/assets/source/fields?source_id=${accessId}&chainId=${chainId}&offset=0&limit=10000&log_trace_id=${logTraceId}`,
+      `/assets/source/fields?source_id=${accessId}&chainId=${chainId}&offset=0&limit=10000&log_trace_id=${logTraceId}`,
     );
     return res.records;
   },
@@ -346,7 +347,7 @@ const dadahubApi = {
    */
   async getSinkFields(chainId) {
     const res = await this.get(
-      `http://datahub.tencent.com/api/sink/fields?log_trace_id=${logTraceId}&keyword=&dataAccessId=&chainId=${chainId}&limit=10000&offset=0`,
+      `/sink/fields?log_trace_id=${logTraceId}&keyword=&dataAccessId=&chainId=${chainId}&limit=10000&offset=0`,
     );
     return res.records;
   },
@@ -368,7 +369,7 @@ const dadahubApi = {
    */
   async getPreloadSinkFields(data) {
     const res = await this.post(
-      `http://datahub.tencent.com/api/sink/fields/preload?log_trace_id=${logTraceId}`,
+      `/sink/fields/preload?log_trace_id=${logTraceId}`,
       data,
     );
     return res;
@@ -380,9 +381,7 @@ const dadahubApi = {
    *
    */
   getSink(id) {
-    return this.get(
-      `http://datahub.tencent.com/api/sink?log_trace_id=${logTraceId}&id=${id}`,
-    );
+    return this.get(`/sink?log_trace_id=${logTraceId}&id=${id}`);
   },
   /**
    * saveSink
@@ -390,10 +389,7 @@ const dadahubApi = {
    * @description 修改sink信息
    */
   saveSink(data) {
-    return this.put(
-      `http://datahub.tencent.com/api/sink?log_trace_id=${logTraceId}`,
-      data,
-    );
+    return this.put(`/sink?log_trace_id=${logTraceId}`, data);
   },
   /**
    *
@@ -401,7 +397,7 @@ const dadahubApi = {
    * @param {*} items item[] 新增的参数列表
    * @param {*} item.event_codes string， 固定值e1
    * @param {*} item.isNew: true 固定值true
-   * @param {*} item.opt_expr: 参数名
+   * @param {*} item.opt_expr: 目标字段
    * @param {*} item.opt_type: 类型 固定值3
    * @param {*} item.source_field_keys: action_kvp 固定值action_kvp
    * @param {*} item.target_field_keys: 目标字段
@@ -413,10 +409,7 @@ const dadahubApi = {
       etlTaskId,
       items,
     };
-    return this.post(
-      `http://datahub.tencent.com/api/etl/task/taskItem?log_trace_id=${logTraceId}`,
-      data,
-    );
+    return this.post(`/etl/task/taskItem?log_trace_id=${logTraceId}`, data);
   },
   /**
    * @description
@@ -424,10 +417,51 @@ const dadahubApi = {
    * 修改字段列表
    */
   attaAccessSubmit(data) {
-    return this.put(
-      `http://datahub.tencent.com/api/link/access??log_trace_id=${logTraceId}`,
-      data,
-    );
+    return this.put(`/link/access?log_trace_id=${logTraceId}`, data);
+  },
+
+  /**
+   * @description
+   * 公参录入预检查
+   * @param chainId
+   * @param accessId
+   * @param dataList
+   *  {
+   *   event_code: "a",
+   *   event_name: "测试1",
+   *   param_key: "country",
+   *   param_name: "城市名",
+   *   param_value_type: 1
+   *  }
+   */
+  commonEventsPriview(chainId, accessId, dataList) {
+    return this.post(`/link/event/preview?log_trace_id=${logTraceId}`, {
+      chain_id: chainId,
+      data_access_id: accessId,
+      params: dataList,
+    });
+  },
+
+  /**
+   * @description
+   * 公参保存
+   * @param chainId
+   * @param accessId
+   * @param dataList
+   *  {
+   *   event_code: "a",
+   *   event_name: "测试1",
+   *   param_key: "country",
+   *   param_name: "城市名",
+   *   param_value_type: 1
+   *  }
+   */
+  commonEventsSave(chainId, dataList) {
+    return this.post(`/link/event/save?log_trace_id=${logTraceId}`, {
+      chain_id: chainId,
+      data_access_id: '',
+      params: dataList,
+    });
   },
 };
 
@@ -459,11 +493,11 @@ function Content(props) {
    * excel中的数据字段
    */
   this.excelfields = {
-    eventCode: 'action*',
-    eventName: '事件显示名*',
-    optExpr: 'action kvp*',
-    fieldKey: 'action kvp*',
-    fieldType: 'action_kvp value数据类型*',
+    event_code: 'action*',
+    event_name: '事件显示名*',
+    field_key: 'action kvp*',
+    field_name: '参数显示名*',
+    field_type: 'action_kvp value数据类型*',
   };
 }
 Content.prototype.log = function (...args) {
@@ -527,13 +561,14 @@ Content.prototype.transfromDataFields = function (data) {
     const fieldObj = Object.keys(this.excelfields).reduce((acc, key) => {
       let value = item[this.excelfields[key]];
       // 参数的key需要转成小写
-      if (key === 'fieldKey') {
+      if (key === 'field_key') {
         value = value && value.toLocaleLowerCase();
       }
       acc[key] = value;
       return acc;
     }, {});
-    if (fieldObj.fieldKey && fieldObj.fieldType) {
+    // 检验数据有效性
+    if (fieldObj.field_key && fieldObj.field_type) {
       resultList.push(fieldObj);
     }
   });
@@ -579,22 +614,22 @@ Content.prototype.etlComponentSubmit = async function (
   );
   const newDataList = excelDataList
     .filter((item) => {
-      if (!etlTaskFieldMap[item.fieldKey]) {
-        etlTaskFieldMap[item.fieldKey] = item;
+      if (!etlTaskFieldMap[item.field_key]) {
+        etlTaskFieldMap[item.field_key] = item;
         return true;
       }
       return false;
     })
     .map((item) => {
-      const { optExpr, fieldKey, fieldType } = item;
+      const { field_key, field_type } = item;
       return {
         event_codes: 'e1',
         isNew: true,
-        opt_expr: optExpr,
+        opt_expr: field_key,
         opt_type: 3,
         source_field_keys: 'action_kvp',
-        target_field_keys: fieldKey,
-        target_field_type: this.targetFieldType[fieldType],
+        target_field_keys: field_key,
+        target_field_type: this.targetFieldType[field_type],
       };
     });
   this.log('新添加的数据列表：', newDataList);
@@ -647,9 +682,9 @@ Content.prototype.attaComponentSubmit = async function (
     return acc;
   }, {});
   excelDataList.forEach((item) => {
-    const { fieldKey, fieldType } = item;
-    if (!recordMap[fieldKey]) {
-      recordMap[fieldKey] = item;
+    const { field_key, field_type } = item;
+    if (!recordMap[field_key]) {
+      recordMap[field_key] = item;
       /**
        * maxIndex +1
        */
@@ -659,8 +694,8 @@ Content.prototype.attaComponentSubmit = async function (
        */
       newFieldList.unshift({
         field_index: maxIndex,
-        field_key: fieldKey,
-        field_type: this.targetFieldType[fieldType],
+        field_key,
+        field_type: this.targetFieldType[field_type],
       });
     }
   });
@@ -762,31 +797,77 @@ Content.prototype.commonEventsSubmit = async function (
   accessId,
   excelFieldList,
 ) {
-  //
+  this.dialog.addText('公共事件管理录入', 'title');
+
   const commonRecords = await dadahubApi.getEtlSourceFields(chainId, accessId);
   const eventList = await dadahubApi.getSinkFields(chainId);
 
   const eventListMap = utils.arrayToObject(eventList, 'event_code');
-  const commonRecordsMap = utils.arrayToObject(commonRecords, 'fieldKey');
 
   // 筛选出需要新增的事件
   newEventList = excelFieldList.filter((item) => {
-    return !eventListMap[item.eventCode];
+    return !eventListMap[item.event_code];
   });
 
-  console.log('-----commonRecords:', commonRecords);
-  console.log('-----eventList:', eventList);
-  console.log('-----newEventList:', newEventList);
+  const newEventCodeMap = utils.arrayToObject(newEventList, 'event_code');
 
-  const newEventCodeMap = utils.arrayToObject(newEventList, 'eventCode');
-  const newEventListMap = newEventList.reduce((acc, item) => {
-    const key = `$${item.eventCode}$${item.fieldKey}`;
-    acc[key] = item;
-    return acc;
-  }, {});
-  /**
-   * @todo 将每一项eventcode的参数都加上公参
-   */
+  /** 全部待录入参数，包括自定义参数 + 公参 */
+  const allParamsList = [];
+  /** 记录参数，事件+参数是唯一的 */
+  const allParamsMap = {};
+  console.log('[newEventList]:', newEventList);
+  // 自定义参数
+  newEventList.forEach((item) => {
+    /** 新添加的自定义参数里面，field_type还是string、bigint等类型，需要转成1、2、3 */
+    const fieldType = this.targetFieldType[item.field_type];
+    const __key = `$${item.event_code}__$${item.field_key}`;
+    if (!allParamsMap[__key]) {
+      allParamsList.push({
+        event_code: item.event_code,
+        event_name: item.event_name,
+        param_key: item.field_key,
+        param_name: item.field_name,
+        param_value_type: fieldType || 1,
+      });
+      allParamsMap[__key] = true;
+    }
+  });
+  /** 将公参添加进来，每个事件都需要把全部的公参就加进来 */
+  Object.keys(newEventCodeMap).forEach((key) => {
+    const { event_code, event_name } = newEventCodeMap[key];
+    // 一个事件 x 多个公参
+    commonRecords.forEach((field) => {
+      if (!field.field_name) {
+        return;
+      }
+      const __key = `$${event_code}__$${field.field_key}`;
+      if (!allParamsMap[__key]) {
+        allParamsList.push({
+          event_code,
+          event_name,
+          // 参数
+          param_key: field.field_key,
+          param_name: field.field_name,
+          param_value_type: field.field_type,
+        });
+        allParamsMap[__key] = true;
+      }
+    });
+  });
+  console.log('公参录入：自定义参数 + 公参数据:', allParamsList);
+  this.dialog.addText(
+    `公参录入：自定义参数 + 公参数据共${allParamsList.length}条`,
+  );
+  if (allParamsList.length === 0) {
+    this.dialog.addText('无需更新：已无需要录入的公参事件');
+    return;
+  }
+  this.dialog.addText('公共事件预检查...');
+  await dadahubApi.commonEventsPriview(chainId, accessId, allParamsList);
+  this.dialog.addText('公共事件预检查通过');
+  this.dialog.addText('公共事件开始录入...');
+  await dadahubApi.commonEventsSave(chainId, allParamsList);
+  this.dialog.addText('公共事件录入成功', 'info');
 };
 /**
  *
@@ -837,9 +918,9 @@ Content.prototype.submit = async function (datas) {
     const accessId = dataAccess.id;
     const fieldsExcludeCommonFileds = utils.filterArrayWithKey(
       excelFieldList,
-      'fieldKey',
+      'field_key',
       excelCommonParamsList,
-      'fieldKey',
+      'field_key',
     );
     await this.etlComponentSubmit(dataEtlTask, fieldsExcludeCommonFileds);
     await this.attaComponentSubmit(
@@ -848,12 +929,12 @@ Content.prototype.submit = async function (datas) {
       busiId,
       excelCommonParamsList,
     );
-    // await this.sinkComponentSubmit(dataSinkList[0].id, busiId, {
-    //   sources: [
-    //     { data_access_id: accessId, etl_task_id: dataEtlTask.etlTaskId },
-    //   ],
-    // });
-    // await this.commonEventsSubmit(chainId, accessId, excelFieldList);
+    await this.sinkComponentSubmit(dataSinkList[0].id, busiId, {
+      sources: [
+        { data_access_id: accessId, etl_task_id: dataEtlTask.etlTaskId },
+      ],
+    });
+    await this.commonEventsSubmit(chainId, accessId, excelFieldList);
     this.dialog.addText(`End`, 'title');
     this.dialog.addText(`数据自动录入操作完成，刷新页面可查看最新数据`, 'info');
   } catch (error) {
